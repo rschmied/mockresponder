@@ -112,8 +112,8 @@ func (m *MockResponder) SetDoFunc(df func(req *http.Request) (*http.Response, er
 }
 
 func (m *MockResponder) Reset() {
-	for _, d := range m.mockData {
-		d.served = false
+	for idx := range m.mockData {
+		m.mockData[idx].served = false
 	}
 	m.lastServed = 0
 }
