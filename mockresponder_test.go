@@ -135,24 +135,21 @@ func TestMockResponder_PanicsInDo(t *testing.T) {
 	}
 	mrClient.SetData(data)
 
+	// context has no contextMockClient context key
 	req, _ := http.NewRequestWithContext(context.TODO(), http.MethodGet, "", nil)
-	pf1 := func() {
+	panicFunc := func() {
 		mrClient.Do(req)
 	}
-	assert.Panics(t, pf1)
+	assert.Panics(t, panicFunc)
 
+	// this panics because of the invalid regex set above
 	req, _ = http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
-	pf2 := func() {
-		mrClient.Do(req)
-	}
-	assert.Panics(t, pf2)
+	assert.Panics(t, panicFunc)
 
+	// this has the correct context key but the value is not a MockResponder
 	bogusCtx := context.WithValue(context.TODO(), contextMockClient, data)
 	req, _ = http.NewRequestWithContext(bogusCtx, http.MethodGet, "", nil)
-	pf3 := func() {
-		mrClient.Do(req)
-	}
-	assert.Panics(t, pf3)
+	assert.Panics(t, panicFunc)
 
 	var (
 		mri interface{}
@@ -160,11 +157,9 @@ func TestMockResponder_PanicsInDo(t *testing.T) {
 	)
 	mri = p
 
+	// this has a nil MockResponder / interface
 	bogusCtx = context.WithValue(context.TODO(), contextMockClient, mri)
 	req, _ = http.NewRequestWithContext(bogusCtx, http.MethodGet, "", nil)
-	pf4 := func() {
-		mrClient.Do(req)
-	}
-	assert.Panics(t, pf4)
+	assert.Panics(t, panicFunc)
 
 }
