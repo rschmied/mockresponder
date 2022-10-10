@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 )
 
@@ -42,6 +43,19 @@ type MockResponder struct {
 	mu         sync.Mutex
 }
 
+func sanitizeURL(url string) string {
+	return strings.Map(
+		func(r rune) rune {
+			switch r {
+			case '\n':
+				fallthrough
+			case '\r':
+				return -1
+			}
+			return r
+		}, url)
+}
+
 // defaultDoFunc is the default implementation to return mocked responses
 // as defined in the response list of the mock responder.
 func defaultDoFunc(req *http.Request) (*http.Response, error) {
@@ -53,7 +67,8 @@ func defaultDoFunc(req *http.Request) (*http.Response, error) {
 	if !ok {
 		panic("returned value is not a MockResponder!")
 	}
-	log.Printf("mock request url %s", req.URL)
+
+	log.Printf("mock request url %s", sanitizeURL(req.URL.String()))
 	if mc == nil {
 		panic("no data")
 	}

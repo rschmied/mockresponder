@@ -152,7 +152,7 @@ func TestMockResponder_PanicsInDo(t *testing.T) {
 	assert.Panics(t, panicFunc)
 
 	var (
-		mri interface{}
+		mri any
 		p   *MockResponder = nil
 	)
 	mri = p
@@ -162,4 +162,24 @@ func TestMockResponder_PanicsInDo(t *testing.T) {
 	req, _ = http.NewRequestWithContext(bogusCtx, http.MethodGet, "", nil)
 	assert.Panics(t, panicFunc)
 
+}
+
+func Test_sanitizeURL(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want string
+	}{
+		{"ok", "ok test", "ok test"},
+		{"nl", "ok\ntest", "oktest"},
+		{"cr", "ok\rtest", "oktest"},
+		{"nlcr", "ok\rtest\nbla", "oktestbla"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sanitizeURL(tt.url); got != tt.want {
+				t.Errorf("sanitizeURL() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
