@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -182,4 +184,53 @@ func Test_sanitizeURL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_Race(t *testing.T) {
+
+	mrClient, ctx := NewMockResponder()
+	data := MockRespList{
+		MockResp{Code: 200},
+		MockResp{Code: 200},
+	}
+	mrClient.SetData(data)
+
+	done := false
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	mu := sync.Mutex{}
+
+	get := func() {
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/bla", nil)
+		resp, _ := mrClient.Do(req)
+		defer resp.Body.Close()
+		io.ReadAll(resp.Body)
+	}
+
+	go func() {
+		get()
+		wg.Done()
+	}()
+
+	go func() {
+		get()
+		wg.Done()
+	}()
+
+	go func() {
+		wg.Wait()
+		mu.Lock()
+		done = true
+		mu.Unlock()
+	}()
+
+	doneCheck := func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return done
+	}
+
+	assert.Eventually(t, doneCheck, time.Second*5, time.Microsecond*50)
+	assert.True(t, mrClient.Empty())
 }

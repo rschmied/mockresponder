@@ -25,6 +25,11 @@ type MockResp struct {
 	served bool
 }
 
+func (mr MockResp) String() string {
+	// return fmt.Sprintf("%s/%d/%v/%s", mr.URL, mr.Code, mr.Err, string(mr.Data))
+	return fmt.Sprintf("%s/%d/%v/%v", mr.URL, mr.Code, mr.Err, mr.served)
+}
+
 // MockRespList is a list of mocked responses, these are the responses that the
 // MockResponder serves, either sequentially or because of a RegEx match.
 type MockRespList []MockResp
@@ -99,21 +104,25 @@ func defaultDoFunc(req *http.Request) (*http.Response, error) {
 		break
 	}
 
-	if !found {
+	// default to 200/OK
+	statusCode := data.Code
+	if statusCode == 0 {
+		statusCode = http.StatusOK
+	}
+
+	if found {
+		// log.Printf("%s <%v>, %d: %v\n", req.Method, req.URL, statusCode, string(data.Data))
+		log.Printf("%s <%v>, %d: %s\n", req.Method, req.URL, statusCode, data)
+	} else {
 		for k, v := range mc.mockData {
-			fmt.Printf("%d: %v/%v/%v/%v\n", k, v.served, v.URL, v.Code, string(v.Data))
+			log.Printf("%d: %v %v %v\n%v\n%v\n", k, v.served, v.URL, v.Code, sanitizeURL(req.URL.String()), string(v.Data))
+			log.Println("**********")
 		}
 		panic("ran out of data")
 	}
 
 	if data.Err != nil {
 		return nil, data.Err
-	}
-
-	// default to 200/OK
-	statusCode := data.Code
-	if statusCode == 0 {
-		statusCode = http.StatusOK
 	}
 
 	resp := &http.Response{
@@ -169,6 +178,7 @@ func (m *MockResponder) LastData() []byte {
 func (m *MockResponder) Empty() bool {
 	for _, d := range m.mockData {
 		if !d.served {
+			log.Println(d)
 			return false
 		}
 	}
