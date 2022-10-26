@@ -73,7 +73,7 @@ func defaultDoFunc(req *http.Request) (*http.Response, error) {
 		panic("returned value is not a MockResponder!")
 	}
 
-	log.Printf("mock request url %s", sanitizeURL(req.URL.String()))
+	log.Printf("mock request url %s %s", req.Method, sanitizeURL(req.URL.String()))
 	if mc == nil {
 		panic("no data")
 	}
