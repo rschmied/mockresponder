@@ -150,10 +150,12 @@ func (m *MockResponder) SetDoFunc(df func(req *http.Request) (*http.Response, er
 // Reset resets the data of the responder so that it can be reused within the
 // same test.
 func (m *MockResponder) Reset() {
+	m.mu.Lock()
 	for idx := range m.mockData {
 		m.mockData[idx].served = false
 	}
 	m.lastServed = 0
+	m.mu.Unlock()
 }
 
 // SetData sets a new mocked data response list into the mock responder.
